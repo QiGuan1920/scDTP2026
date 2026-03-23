@@ -1,5 +1,5 @@
 # scDTP
 
-**scDTP** is a novel model for predicting single-cell drug perturbation responses.
+**scDTP** is a novel model for single-cell drug perturbation prediction.
 
 Detailed documentation and implementation will be uploaded soon.
