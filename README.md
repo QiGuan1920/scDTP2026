@@ -18,6 +18,9 @@ The scDTP framework is powered by a unified architecture built upon core pillars
 * **Conditional Normalizing Flows**: 
   To capture the complex, high-dimensional stochasticity of single-cell responses, scDTP utilizes **Conditional Normalizing Flows**. Conditioned on the generated prototypes and multi-modal embeddings, the flow model transforms a tractable base distribution into the highly complex, non-linear distribution of the perturbed gene expression profile. This allows for exact log-likelihood estimation and highly realistic cellular sampling.
 
+* **Comprehensive Evaluation**:
+  Includes built-in evaluation modules to assess prediction quality across multiple biological and statistical dimensions (e.g., DEG identification rate, R² scores, Pearson correlation, etc.).
+
 ## Repository Structure
 
 ```text
