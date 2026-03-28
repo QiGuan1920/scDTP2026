@@ -71,7 +71,7 @@ all_results, metrics_df = main_unified_drug_prediction(
     save_dir="./results/"
 )
 
-# 4. Review the final evaluation metrics
+# Review the final evaluation metrics
 print(metrics_df.head())
 ```
 
