@@ -71,7 +71,7 @@ all_results, metrics_df = main_unified_drug_prediction(
     num_epochs=30,          # Configurable hyperparameters
     batch_size=128,
     save_adata=True,
-    save_dir="./results/"
+    save_dir="./results/h5ad_final/"
 )
 
 # Review the final evaluation metrics
