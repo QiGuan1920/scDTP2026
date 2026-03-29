@@ -5,6 +5,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
+# ==================== Random Seed Control ====================
 def set_all_seeds(seed=1000):
     """Set all random seeds to ensure reproducibility."""
     random.seed(seed)
@@ -15,16 +16,16 @@ def set_all_seeds(seed=1000):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-    print(f"✓ Random seeds set to: {seed}")
+    print(f"✓ Random seed set to: {seed}")
 
 def get_device():
-    """Get the available device (CPU/GPU)."""
+    """Get the available device."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
     return device
 
 def test_reproducibility_cpu(seed=1000):
-    """Test reproducibility in the current environment."""
+    """Test reproducibility in the CPU environment."""
     set_all_seeds(seed)
     rand1, perm1, numpy_rand1 = torch.randn(5), torch.randperm(10), np.random.random(3)
     
