@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+# ==================== Conditional Flow Components ====================
 class LightweightCouplingLayer(nn.Module):
     """Lightweight Real NVP coupling layer."""
     def __init__(self, input_dim, condition_dim, hidden_dim):
@@ -36,7 +37,6 @@ class LightweightCouplingLayer(nn.Module):
             
         return torch.cat([x1, x2], dim=1), log_det
 
-
 class LightweightConditionalFlow(nn.Module):
     """Lightweight Conditional Normalizing Flow."""
     def __init__(self, input_dim, condition_dim, num_layers=4, hidden_dim=128, seed=1000):
@@ -65,6 +65,7 @@ class LightweightConditionalFlow(nn.Module):
     
     def forward(self, x, condition, reverse=False):
         log_det_total = 0
+        
         if not reverse:
             for i, coupling in enumerate(self.coupling_layers):
                 x = x[:, self.permutations[i]]
@@ -75,6 +76,7 @@ class LightweightConditionalFlow(nn.Module):
                 x, log_det = coupling(x, condition, reverse=True)
                 x = x[:, torch.argsort(self.permutations[i])]
                 log_det_total += log_det
+                
         return x, log_det_total
     
     def log_prob(self, x, condition):
@@ -89,14 +91,17 @@ class LightweightConditionalFlow(nn.Module):
         x, _ = self.forward(z, condition, reverse=True)
         return x
 
-
+# ==================== Unified Predictive Model ====================
 class UnifiedDrugPredictor(nn.Module):
-    """Unified Drug Perturbation Predictor - based on PCA similarity and conditional flow."""
+    """Unified Drug Perturbation Predictor - Based on PCA similarity and conditional flow."""
     def __init__(self, gene_dim, drug_attr_dim, drug_sm_dim, drug_img_dim, drug_net_dim, hidden_dim=256, seed=1000):
         super().__init__()
+
         self.gene_encoder = nn.Sequential(
-            nn.Linear(gene_dim, hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim//2), nn.ReLU()
+            nn.Linear(gene_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim//2),
+            nn.ReLU()
         )
 
         self.drug_attr_encoder = nn.Sequential(nn.Linear(drug_attr_dim, hidden_dim//4), nn.ReLU())
@@ -108,21 +113,30 @@ class UnifiedDrugPredictor(nn.Module):
         self.drug_projection = nn.Sequential(nn.Linear(hidden_dim//4, hidden_dim//2), nn.ReLU())
         self.norm_drug = nn.LayerNorm(hidden_dim//4)
         self.drug_feed_forward = nn.Sequential(
-            nn.Linear(hidden_dim//4, hidden_dim//2), nn.ReLU(),
+            nn.Linear(hidden_dim//4, hidden_dim//2),
+            nn.ReLU(),
             nn.Linear(hidden_dim//2, hidden_dim//4)
         )
 
         self.response_generator = nn.Sequential(
-            nn.Linear(100 + hidden_dim//2 + hidden_dim//2, hidden_dim), nn.ReLU(),
-            nn.LayerNorm(hidden_dim), nn.Dropout(0.1),
+            nn.Linear(100 + hidden_dim//2 + hidden_dim//2, hidden_dim),
+            nn.ReLU(),
+            nn.LayerNorm(hidden_dim),
+            nn.Dropout(0.1),
             nn.Linear(hidden_dim, hidden_dim//2)
         )
 
-        self.fusion = nn.Sequential(nn.Linear(3 * (hidden_dim//2), hidden_dim), nn.ReLU())
+        self.fusion = nn.Sequential(
+            nn.Linear(3 * (hidden_dim//2), hidden_dim),
+            nn.ReLU()
+        )
 
         self.flow_model = LightweightConditionalFlow(
-            input_dim=gene_dim, condition_dim=hidden_dim,
-            num_layers=4, hidden_dim=64, seed=seed
+            input_dim=gene_dim,
+            condition_dim=hidden_dim,
+            num_layers=4,
+            hidden_dim=64,
+            seed=seed
         )
 
         self.training_combinations = []
@@ -168,7 +182,8 @@ class UnifiedDrugPredictor(nn.Module):
         ref_ctrl_list, ref_drug_feats, ref_ctrl_encoded = [], [], []
 
         for combo in self.training_combinations:
-            if exclude_combinations and combo in exclude_combinations: continue
+            if exclude_combinations and combo in exclude_combinations:
+                continue
             rc_expr = combo['control_expr'].to(device).float()
             ref_ctrl_list.append(rc_expr)
 
@@ -181,7 +196,7 @@ class UnifiedDrugPredictor(nn.Module):
         if len(ref_ctrl_list) == 0:
             return torch.zeros(out_dim, device=device)
 
-        # PCA dimension reduction to 100 dimensions
+        # PCA dimensionality reduction to 100 dimensions
         blocks = [tgt_ctrl] + ref_ctrl_list
         N_counts = [b.shape[0] for b in blocks]
         X = torch.cat(blocks, dim=0)
@@ -193,7 +208,7 @@ class UnifiedDrugPredictor(nn.Module):
         Vk = V[:, :k]
         Z = Xc @ Vk
 
-        # Calculate mean vector of each group
+        # Calculate mean vectors for each population
         idx = 0
         z_means = []
         for n in N_counts:
@@ -211,9 +226,12 @@ class UnifiedDrugPredictor(nn.Module):
         drug_sims = (F.cosine_similarity(ref_drug_mat, target_drug_feat.unsqueeze(0), dim=1) + 1) / 2
 
         # Scenario weighting
-        if self.scenario_type == 'mono_drug_multi_cell': sims = cell_sims
-        elif self.scenario_type == 'multi_drug_mono_cell': sims = drug_sims
-        else: sims = 0.5 * (cell_sims + drug_sims)
+        if self.scenario_type == 'mono_drug_multi_cell':
+            sims = cell_sims
+        elif self.scenario_type == 'multi_drug_mono_cell':
+            sims = drug_sims
+        else:
+            sims = 0.5 * (cell_sims + drug_sims)
 
         weights = F.softmax(sims / 1.0, dim=0)
 
