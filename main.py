@@ -369,13 +369,13 @@ if __name__ == "__main__":
     # Test reproducibility in CPU environment
     test_reproducibility_cpu(seed=1000)
   
-    all_results, _ = main_unified_drug_prediction(
+    all_results, metrics_df = main_unified_drug_prediction(
         adata, drug_attr, drug_sm, drug_img, drug_net,
         mode='evaluate_all',
         num_epochs=30,
         batch_size=128,
-        lambda_recon=50.0,
-        lambda_quantile=50.0,
+        lambda_recon=50,
+        lambda_quantile=50,
         early_stopping=True,
         patience=10,
         seed=1000,
